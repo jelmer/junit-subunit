@@ -1,0 +1,4 @@
+test_command = "java -cp target/junit-subunit-0.1.0-SNAPSHOT-standalone.jar:target/test-classes io.github.jelmer.junitsubunit.Main $IDOPTION $LISTOPT --scan-classpath=target/test-classes --exclude-class=.*Fixture$"
+test_id_option = "--load-list=$IDFILE"
+test_list_option = "--list"
+group_regex = "^(.*)::[^:]+$"

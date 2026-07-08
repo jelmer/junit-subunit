@@ -1,7 +1,7 @@
 package io.github.jelmer.junitsubunit;
 
-import io.github.jelmer.junitsubunit.sample.MixedSample;
-import io.github.jelmer.junitsubunit.sample.PassingSample;
+import io.github.jelmer.junitsubunit.sample.MixedFixture;
+import io.github.jelmer.junitsubunit.sample.PassingFixture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,8 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MainIntegrationTest {
 
-    private static final String PASSING = PassingSample.class.getName();
-    private static final String MIXED = MixedSample.class.getName();
+    private static final String PASSING = PassingFixture.class.getName();
+    private static final String MIXED = MixedFixture.class.getName();
 
     @Test
     void testList() throws Exception {

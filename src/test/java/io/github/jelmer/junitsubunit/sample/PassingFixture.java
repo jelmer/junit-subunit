@@ -4,9 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-// Not named *Test so surefire skips it; MainIntegrationTest drives it via
-// the JUnit Platform Launcher.
-public class PassingSample {
+// Fixture data for MainIntegrationTest, which drives it via the JUnit Platform
+// Launcher with explicit selectors. Named *Fixture (not *Test) so surefire and
+// other convention-based runners skip it.
+public class PassingFixture {
 
     @Test
     void addition() {
