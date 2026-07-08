@@ -19,9 +19,20 @@ Produces `target/junit-subunit-<version>-standalone.jar`.
 java -jar junit-subunit-standalone.jar --scan-classpath=build/test-classes
 ```
 
-Options: `--scan-classpath`, `--select-class`, `--select-package`,
-`--select-method`, `--select-unique-id`, `--load-list=FILE`, positional test
-ids, and `--list` to enumerate without running. Test ids are the JUnit
+The option names and short forms follow the JUnit Platform ConsoleLauncher:
+
+- Selectors: `--scan-classpath[=PATH]`, `-c/--select-class`,
+  `-p/--select-package`, `-m/--select-method`, `-u/--select-uri`,
+  `-f/--select-file`, `-d/--select-directory`, `-o/--select-module`,
+  `-r/--select-resource`, `-i/--select-iteration`, `--select-unique-id`
+  (aka `--uid`), and the generic `--select=PREFIX:VALUE`.
+- Filters: `-n/--include-classname`, `-N/--exclude-classname`,
+  `--include-package`, `--exclude-package`, `-t/--include-tag`,
+  `-T/--exclude-tag`, `-e/--include-engine`, `-E/--exclude-engine`.
+- Extras: `--load-list=FILE` and positional test ids, `-l/--list` to
+  enumerate without running.
+
+Both `--opt=VALUE` and `--opt VALUE` are accepted. Test ids are the JUnit
 Platform unique id, e.g.
 `[engine:junit-jupiter]/[class:com.example.Foo]/[method:bar()]`.
 
