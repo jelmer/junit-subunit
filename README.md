@@ -21,6 +21,9 @@ java -jar junit-subunit-standalone.jar --scan-classpath=build/test-classes
 
 The option names and short forms follow the JUnit Platform ConsoleLauncher:
 
+- Classpath: `-cp/--classpath/--class-path=PATH` adds entries used to
+  discover tests, so the standalone jar can be invoked without wrapping
+  it in a `java -cp ...` command. Repeatable and PATH-separated.
 - Selectors: `--scan-classpath[=PATH]`, `-c/--select-class`,
   `-p/--select-package`, `-m/--select-method`, `-u/--select-uri`,
   `-f/--select-file`, `-d/--select-directory`, `-o/--select-module`,
@@ -40,8 +43,8 @@ Platform unique id, e.g.
 
 ```
 [DEFAULT]
-test_command=java -cp build/test-classes:libs/junit-subunit-standalone.jar \
-  io.github.jelmer.junitsubunit.Main $IDOPTION $LISTOPT
+test_command=junit-subunit --classpath=build/test-classes \
+  --scan-classpath=build/test-classes $IDOPTION $LISTOPT
 test_id_option=--load-list=$IDFILE
 test_list_option=--list
 ```
