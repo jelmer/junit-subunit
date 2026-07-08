@@ -142,4 +142,58 @@ class MainIntegrationTest {
         assertEquals(2, rc);
         assertEquals(0, out.size());
     }
+
+    @Test
+    void testShortSelectClass() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {"-c", PASSING}, out);
+        assertEquals(0, rc);
+        List<SubunitV2Reader.Packet> packets = SubunitV2Reader.readAll(out.toByteArray());
+        assertEquals(4, packets.size());
+    }
+
+    @Test
+    void testShortListAndSelectMethod() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {"-l", "-m", MIXED + "#boom"}, out);
+        assertEquals(0, rc);
+        List<SubunitV2Reader.Packet> packets = SubunitV2Reader.readAll(out.toByteArray());
+        assertEquals(1, packets.size());
+        assertEquals(SubunitV2Writer.Status.EXISTS, packets.get(0).status);
+        assertTrue(packets.get(0).testId.contains("boom"));
+    }
+
+    @Test
+    void testExcludeClassnameFilter() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {
+                "--list",
+                "-p", "io.github.jelmer.junitsubunit.sample",
+                "-N", ".*MixedFixture"
+        }, out);
+        assertEquals(0, rc);
+        List<SubunitV2Reader.Packet> packets = SubunitV2Reader.readAll(out.toByteArray());
+        Set<String> ids = packets.stream().map(p -> p.testId).collect(Collectors.toSet());
+        assertTrue(ids.stream().allMatch(s -> !s.contains("MixedFixture")));
+        assertTrue(ids.stream().anyMatch(s -> s.contains("PassingFixture")));
+    }
+
+    @Test
+    void testExcludeEngineFilter() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {
+                "--list",
+                "--select-class=" + PASSING,
+                "-E", "junit-jupiter"
+        }, out);
+        assertEquals(0, rc);
+        assertEquals(0, SubunitV2Reader.readAll(out.toByteArray()).size());
+    }
+
+    @Test
+    void testUnknownOptionReports() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {"--nope"}, out);
+        assertEquals(2, rc);
+    }
 }
