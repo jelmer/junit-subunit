@@ -196,4 +196,39 @@ class MainIntegrationTest {
         int rc = Main.run(new String[] {"--nope"}, out);
         assertEquals(2, rc);
     }
+
+    @Test
+    void testExtraClasspath(@TempDir Path tmp) throws Exception {
+        Path src = tmp.resolve("ExtraFixture.java");
+        Files.writeString(src, ""
+                + "package extra;\n"
+                + "import org.junit.jupiter.api.Test;\n"
+                + "import static org.junit.jupiter.api.Assertions.assertEquals;\n"
+                + "public class ExtraFixture {\n"
+                + "  @Test void ok() { assertEquals(2, 1 + 1); }\n"
+                + "}\n");
+        javax.tools.JavaCompiler javac = javax.tools.ToolProvider.getSystemJavaCompiler();
+        if (javac == null) {
+            return;
+        }
+        Path outDir = tmp.resolve("classes");
+        Files.createDirectories(outDir);
+        int compile = javac.run(null, null, null,
+                "-d", outDir.toString(),
+                "-cp", System.getProperty("java.class.path"),
+                src.toString());
+        assertEquals(0, compile);
+
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int rc = Main.run(new String[] {
+                "--classpath=" + outDir,
+                "--select-class=extra.ExtraFixture"
+        }, out);
+        assertEquals(0, rc);
+        List<SubunitV2Reader.Packet> packets = SubunitV2Reader.readAll(out.toByteArray());
+        assertEquals(2, packets.size());
+        assertEquals(SubunitV2Writer.Status.INPROGRESS, packets.get(0).status);
+        assertEquals(SubunitV2Writer.Status.SUCCESS, packets.get(1).status);
+        assertTrue(packets.get(0).testId.contains("ExtraFixture"));
+    }
 }

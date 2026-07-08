@@ -17,6 +17,8 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,6 +59,28 @@ public final class Main {
             return 2;
         }
 
+        ClassLoader previousLoader = Thread.currentThread().getContextClassLoader();
+        URLClassLoader extraLoader = null;
+        if (!args.extraClasspath.isEmpty()) {
+            URL[] urls = new URL[args.extraClasspath.size()];
+            for (int j = 0; j < urls.length; j++) {
+                urls[j] = args.extraClasspath.get(j).toUri().toURL();
+            }
+            extraLoader = new URLClassLoader(urls, previousLoader);
+            Thread.currentThread().setContextClassLoader(extraLoader);
+        }
+        try {
+            return runWithSelectors(args, selectors, stdout);
+        } finally {
+            if (extraLoader != null) {
+                Thread.currentThread().setContextClassLoader(previousLoader);
+                try { extraLoader.close(); } catch (IOException ignored) {}
+            }
+        }
+    }
+
+    private static int runWithSelectors(Args args, List<DiscoverySelector> selectors,
+                                        java.io.OutputStream stdout) throws IOException {
         LauncherDiscoveryRequestBuilder builder = LauncherDiscoveryRequestBuilder.request()
                 .selectors(selectors);
         if (!args.includeClassname.isEmpty()) {
@@ -160,8 +184,11 @@ public final class Main {
             Set<Path> roots = new LinkedHashSet<>(args.scanRoots);
             selectors.addAll(DiscoverySelectors.selectClasspathRoots(roots));
         } else if (args.scanClasspath) {
-            String cp = System.getProperty("java.class.path", "");
             Set<Path> roots = new LinkedHashSet<>();
+            for (Path p : args.extraClasspath) {
+                if (Files.isDirectory(p)) roots.add(p);
+            }
+            String cp = System.getProperty("java.class.path", "");
             for (String part : cp.split(java.io.File.pathSeparator)) {
                 if (part.isEmpty()) continue;
                 Path p = Paths.get(part);
@@ -203,11 +230,15 @@ public final class Main {
         out.println();
         out.println("Run JUnit tests and emit subunit v2 on stdout.");
         out.println();
+        out.println("Classpath:");
+        out.println("  -cp, --classpath=PATH         additional classpath entries for test discovery");
+        out.println("                                (repeatable, PATH-separated); aka --class-path");
+        out.println();
         out.println("Selectors (any combination):");
         out.println("  testid...                     positional test ids (unique id, class, class#method)");
         out.println("  --load-list=PATH              newline-separated file of test ids");
         out.println("  --scan-classpath[=PATH]       scan classpath roots (repeatable); no arg scans");
-        out.println("                                the system classpath's directory entries");
+        out.println("                                --classpath entries and the system classpath");
         out.println("  --scan-class-path[=PATH]      alias for --scan-classpath");
         out.println("  -c, --select-class=CLASS      select a class by FQN");
         out.println("  -p, --select-package=PKG      select all tests in a package");
@@ -243,6 +274,7 @@ public final class Main {
         Path loadList;
         boolean scanClasspath;
         final List<Path> scanRoots = new ArrayList<>();
+        final List<Path> extraClasspath = new ArrayList<>();
         final List<String> selectClass = new ArrayList<>();
         final List<String> selectPackage = new ArrayList<>();
         final List<String> selectMethod = new ArrayList<>();
@@ -298,7 +330,16 @@ public final class Main {
                     continue;
                 }
 
-                OptMatch m = matchOpt(argv, i, "--load-list");
+                OptMatch m = matchOpt(argv, i, "-cp", "--classpath", "--class-path");
+                if (m != null) {
+                    for (String part : m.value.split(java.io.File.pathSeparator)) {
+                        if (!part.isEmpty()) a.extraClasspath.add(Paths.get(part));
+                    }
+                    i = m.next;
+                    continue;
+                }
+
+                m = matchOpt(argv, i, "--load-list");
                 if (m != null) { a.loadList = Paths.get(m.value); i = m.next; continue; }
 
                 m = matchOpt(argv, i, "-c", "--select-class");
