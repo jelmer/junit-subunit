@@ -1,7 +1,9 @@
 package io.github.jelmer.junitsubunit;
 
 import org.junit.platform.engine.DiscoverySelector;
+import org.junit.platform.engine.discovery.ClassNameFilter;
 import org.junit.platform.engine.discovery.DiscoverySelectors;
+import org.junit.platform.engine.discovery.PackageNameFilter;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.TestIdentifier;
@@ -52,9 +54,16 @@ public final class Main {
             return 2;
         }
 
-        LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request()
-                .selectors(selectors)
-                .build();
+        LauncherDiscoveryRequestBuilder builder = LauncherDiscoveryRequestBuilder.request()
+                .selectors(selectors);
+        if (!args.excludePackage.isEmpty()) {
+            builder.filters(PackageNameFilter.excludePackageNames(args.excludePackage));
+        }
+        if (!args.excludeClass.isEmpty()) {
+            builder.filters(ClassNameFilter.excludeClassNamePatterns(
+                    args.excludeClass.toArray(new String[0])));
+        }
+        LauncherDiscoveryRequest request = builder.build();
 
         Launcher launcher = LauncherFactory.create();
         SubunitV2Writer writer = new SubunitV2Writer(new BufferedOutputStream(stdout));
@@ -144,6 +153,10 @@ public final class Main {
         out.println("  --select-method=SPEC       select a method (class#method or class#method(paramTypes))");
         out.println("  --select-unique-id=UID     select by JUnit Platform unique id");
         out.println();
+        out.println("Filters (applied to discovered tests):");
+        out.println("  --exclude-package=PKG      exclude tests in a package (and its subpackages)");
+        out.println("  --exclude-class=REGEX      exclude classes matching a regex (fully qualified name)");
+        out.println();
         out.println("Modes:");
         out.println("  --list                     enumerate matching tests without executing");
         out.println("  -h, --help                 show this help");
@@ -158,6 +171,8 @@ public final class Main {
         final List<String> selectPackage = new ArrayList<>();
         final List<String> selectMethod = new ArrayList<>();
         final List<String> selectUniqueId = new ArrayList<>();
+        final List<String> excludePackage = new ArrayList<>();
+        final List<String> excludeClass = new ArrayList<>();
         final List<String> positionalIds = new ArrayList<>();
 
         static Args parse(String[] argv) {
@@ -193,6 +208,10 @@ public final class Main {
                 if (value != null) { a.selectMethod.add(value); continue; }
                 value = optValue(arg, "--select-unique-id");
                 if (value != null) { a.selectUniqueId.add(value); continue; }
+                value = optValue(arg, "--exclude-package");
+                if (value != null) { a.excludePackage.add(value); continue; }
+                value = optValue(arg, "--exclude-class");
+                if (value != null) { a.excludeClass.add(value); continue; }
                 if (arg.startsWith("--")) {
                     throw new IllegalArgumentException("unknown option: " + arg);
                 }
